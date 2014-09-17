@@ -4,18 +4,25 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
 from bs4 import BeautifulSoup
-import time, re, pymysql, html5lib, random, sys, urlparse, urllib
+import time, re, pymysql, html5lib, random, sys, urlparse, urllib, ConfigParser
 
 add_urls = [ 'yellowpages.com', 'facebook.com' ]
 ignore_urls = [ 'manta.com', 'angieslist.com', 'bbb.org', 'yelp.com', 'google.com', 'whitepages.com', 'superpages.com', 'citysearch.com', 'mojopages.com', 'usplaces.com', 'mapquest.com', 'yellowbook.com', 'merchantcircle.com', 'credibility.com', 'findthebest.com', 'amfibi.com', 'citypages.com', 'indeed.com', 'craigslist.org', 'corporationwiki.com', 'opendi.us']
-conn = pymysql.connect(host="192.168.1.9", user="root", passwd="", db="emails")
+
+config = ConfigParser.ConfigParser()
+config.read('config.ini')
+db = config.items('database')
+print db
+chrome_path = config.get('chromedriver', 'path')
+conn = pymysql.connect(host=db[0][1], user=db[1][1], passwd=db[2][1], db=db[3][1])
+
 
 def prepare_source(source):
 	source = re.sub('>\W+<', '><', source)
 	return source.replace("\n", "")
 	
 def scrape(id, name, city, state):
-	driver = webdriver.Chrome('/Users/waleup/Downloads/chromedriver')
+	driver = webdriver.Chrome(chrome_path)
 	driver.implicitly_wait(3)
 	base_url = "http://google.com/#q="
 	final_url = base_url+urllib.quote(name+", "+city+", "+state)
