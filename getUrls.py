@@ -11,10 +11,8 @@ ignore_urls = [ 'manta.com', 'angieslist.com', 'bbb.org', 'yelp.com', 'google.co
 
 config = ConfigParser.ConfigParser()
 config.read('config.ini')
-db = config.items('database')
-print db
 chrome_path = config.get('chromedriver', 'path')
-conn = pymysql.connect(host=db[0][1], user=db[1][1], passwd=db[2][1], db=db[3][1])
+conn = pymysql.connect(host=config.get('database', 'host'), user=config.get('database', 'user'), passwd=config.get('database', 'passwd'), db=config.get('database', 'db'))
 
 
 def prepare_source(source):
