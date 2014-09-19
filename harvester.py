@@ -7,21 +7,6 @@ from bs4 import BeautifulSoup
 import time, re, pymysql, html5lib, random, sys, smtplib, socket
 offset=0
 
-def notify(message):
-	fromaddr = 'mobile@waleup.com'
-	toaddr = 'ppashin@gmail.com'
-	msg = message+' on '+ socket.gethostname()
-	
-	server = smtplib.SMTP('smtp.gmail.com:587')
-	server.set_debuglevel(1)
-	
-	server.starttls()
-	server.login('mobile@waleup.com', 'nickelpen622')
-	
-	server.sendmail(fromaddr, toaddr, msg)
-	
-	server.quit()
-
 def scrape(url, link_id):
 	driver = webdriver.Firefox()
 	driver.set_window_size(300,500)

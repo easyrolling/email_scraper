@@ -8,21 +8,7 @@ from bs4.element import Tag
 import time, re, pymysql, html5lib, random, smtplib, socket, sys
 i=1
 
-def notify(message):
-	fromaddr = 'mobile@waleup.com'
-	toaddr = 'ppashin@gmail.com'
-	msg = message+' on '+ socket.gethostname()
-	
-	server = smtplib.SMTP('smtp.gmail.com:587')
-	#server.set_debuglevel(1)
-	
-	server.starttls()
-	server.login('mobile@waleup.com', 'nickelpen622')
-	
-	server.sendmail(fromaddr, toaddr, msg)
-	
-	server.quit()
-	
+
 def scrape_links(driver):
 	global i
 	profile_urls = []
