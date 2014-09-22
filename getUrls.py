@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 import time, re, pymysql, html5lib, random, sys, urlparse, urllib, ConfigParser
 
 add_urls = [ 'yellowpages.com', 'facebook.com' ]
-ignore_urls = [ 'manta.com', 'angieslist.com', 'bbb.org', 'yelp.com', 'google.com', 'whitepages.com', 'superpages.com', 'citysearch.com', 'mojopages.com', 'usplaces.com', 'mapquest.com', 'yellowbook.com', 'merchantcircle.com', 'credibility.com', 'findthebest.com', 'amfibi.com', 'citypages.com', 'indeed.com', 'craigslist.org', 'corporationwiki.com', 'opendi.us']
+ignore_urls = [ 'manta.com', 'angieslist.com', 'bbb.org', 'yelp.com', 'google.com', 'whitepages.com', 'superpages.com', 'citysearch.com', 'mojopages.com', 'usplaces.com', 'mapquest.com', 'yellowbook.com', 'merchantcircle.com', 'credibility.com', 'findthebest.com', 'amfibi.com', 'citypages.com', 'indeed.com', 'craigslist.org', 'corporationwiki.com', 'opendi.us', 'dandb.com', 'fastsigns.com', 'printchomp.com', 'usbizplace.com']
 
 config = ConfigParser.ConfigParser()
 config.read('config.ini')
@@ -82,7 +82,7 @@ def scrape(id, name, city, state):
 				
 		print 'title matches', title, tcount
 		print 'url matches', host, ucount
-		if(tcount >= (len(lname)//2)) & (ucount > 0):
+		if(tcount > (len(lname)//2)) & (ucount > (len(lname)//2)):
 			i = 10
 			print 'FOUND WEB host', host
 			found = host
