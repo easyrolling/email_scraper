@@ -19,12 +19,16 @@ def scrape(id, url, biz_id):
 	driver.get(url)
 	time.sleep(1+random.random()*3)
 	
-	element = driver.find_element_by_link_text('About')
+	try:	
+		element = driver.find_element_by_link_text('About')
 
-	if(element):
-		if(element.get_attribute('href') !='https://www.facebook.com/facebook'):
-			#print element.get_attribute('href')
-			element.click()
+		if(element):
+			if(element.get_attribute('href') !='https://www.facebook.com/facebook'):
+				#print element.get_attribute('href')
+				element.click()
+	except Exception:
+		print 'Exception while looking for About page'
+		pass
 
 	time.sleep(1+random.random()*3)
 	
