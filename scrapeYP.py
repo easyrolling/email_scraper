@@ -24,6 +24,7 @@ def scrape(id, url, biz_id):
 
 	if(driver.current_url != url):
 		print 'forward'
+		driver.quit()
 		return
 
 	
