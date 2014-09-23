@@ -18,7 +18,7 @@ commit = True
 
 def tor_start():
 	subprocess.call([tor_path])
-	time.sleep(4)
+	time.sleep(7)
 
 def tor_quit():
 	p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
@@ -30,7 +30,7 @@ def tor_quit():
 			print 'quit pid', pid
 			os.kill(pid, signal.SIGKILL)
 
-	time.sleep(4)
+	time.sleep(7)
 
 
 def scrape(id, url, biz_id):
@@ -43,13 +43,14 @@ def scrape(id, url, biz_id):
 
 	#driver = webdriver.Chrome(chrome_path)
 	driver.implicitly_wait(3)
+	driver.set_window_size(300+random.randint(1, 100),400)
 	driver.get(url)
 	time.sleep(1+random.random()*3)
 	
 
 	#print 'url', driver.current_url
 	
-	if '403 Forbidden' in driver.title:
+	if ('403 Forbidden' in driver.title) | ('Problem loading page' in driver.title):
 		print 'we are busted, get a new IP'
 		driver.quit()
 		tor_quit()
