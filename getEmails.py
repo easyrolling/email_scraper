@@ -64,8 +64,9 @@ def scrape(biz_id, url):
 			
 			if(anchor):
 				print 'found anchor', anchor.text, anchor.get('href')
-				href = anchor.get('href').strip()
+				href = anchor.get('href')
 				if(href):
+					href = href.strip()
 					status_id = 3
 					if href.startswith('http'):
 						r = session.get(href)
@@ -93,6 +94,9 @@ def scrape(biz_id, url):
 		print 'error while connecting', href
 		status_id = 5
 		stripped_url = ''
+	except ChunkEncodingError:
+		print 'chunk encoding error', href
+		status_id = 1
 	
 	update_biz(biz_id, status_id, stripped_url)
 	session.close()
