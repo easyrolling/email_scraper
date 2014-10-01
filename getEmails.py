@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import time, re, pymysql, html5lib, random, sys, requests, ConfigParser
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, ChunkedEncodingError, InvalidURL
 from pymysql.err import IntegrityError
 
 config = ConfigParser.ConfigParser()
@@ -89,12 +89,15 @@ def scrape(biz_id, url):
 				if(email_val):
 					if(add_email(email_val, biz_id)):
 						status_id=2
-						
+	except InvalidURL:
+		print 'invalid url', href
+		status_id=5
+		stripped_url = ''
 	except ConnectionError:
 		print 'error while connecting', href
 		status_id = 5
 		stripped_url = ''
-	except ChunkEncodingError:
+	except ChunkedEncodingError:
 		print 'chunk encoding error', href
 		status_id = 1
 	
@@ -170,9 +173,8 @@ def get_links(idd):
 			
 		cursor.close()
 	conn.close()
-if __name__ == '__main__':
-	global offset
-	offset = 0 if len(sys.argv) <= 1 else sys.argv[1]
-	idd = 0
 
-	get_links(idd)
+offset = 0 if len(sys.argv) <= 1 else sys.argv[1]
+idd = 0
+
+get_links(idd)
