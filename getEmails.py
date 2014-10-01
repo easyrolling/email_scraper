@@ -1,106 +1,147 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select
-from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
 from bs4 import BeautifulSoup
-import time, re, pymysql, html5lib, random, sys, urlparse, mechanize
-offset=0
+import time, re, pymysql, html5lib, random, sys, requests, ConfigParser
+from requests.exceptions import ConnectionError
+from pymysql.err import IntegrityError
+
+config = ConfigParser.ConfigParser()
+config.read('config.ini')
+chrome_path = config.get('chromedriver', 'path')
+conn = pymysql.connect(host=config.get('database', 'host'), user=config.get('database', 'user'), passwd=config.get('database', 'passwd'), db=config.get('database', 'db'))
+commit = True
 
 def prepare_source(source):
 	source = re.sub('>\W+<', '><', source)
 	return source.replace("\n", "")
+
+def find_email(source, current_url):
+	prog = re.compile('(mailto:|>|\W)([\w.]+@'+current_url+')', re.I)
+	email = prog.search(source)
 	
-def scrape(email_id, email_val, url):
-	driver = webdriver.Chrome('/Users/waleup/Downloads/chromedriver')
-	driver.implicitly_wait(3)
-	base_url = "http://"
-	final_url = base_url+url
-	print final_url
+	if(email):
+		if(len(email.groups()) > 1):
+			print 'Email:', email.group(2)
+			return email.group(2)
+	else:
+		prog = re.compile('(mailto:|>|\W)([\w.]+@[\w.]+)', re.I)
+		email = prog.search(source)
+		if(email):
+			if(len(email.groups()) > 1):
+				if('.png' not in email.group(2)):
+					if('.' in email.group(2)):
+						print 'Email:', email.group(2)
+						return email.group(2)
+	return False
+	
+def scrape(biz_id, url):
 	try:
-		driver.get(final_url)
-		print 'title', driver.title
-		if ('is not available' in driver.title) | ('Verizon' in driver.title):
-			print 'wrong url', url
-			url = ''
-			status_id = 4
+		base_url = "http://"
+		final_url = base_url+url
+		stripped_url = url
+		href = url
+
+		time.sleep(1)
+		session = requests.session()
+		r = session.get(final_url)
+		
+		print final_url, r.status_code
+		if (r.status_code != 200):
+			print 'wrong url', url, r.status_code
+			status_id = 5
+			stripped_url = ''
 		else:
-			status_id = 3
-			time.sleep(1+random.random()*3)
+			status_id = 4
+			time.sleep(1)
 			
-			url = urlparse.urlparse(driver.current_url)
-			url = url.netloc
-			current_url = url.replace('www.', '')
-			print 'url: ', url
+			if(r.is_redirect):
+				print r.url
+				url = r.url
+				stripped_url = url.replace('www.', '')
 			
-			source = prepare_source(driver.page_source)
+			
+			source = prepare_source(r.text)
 			soup = BeautifulSoup(source, 'html5lib')
 			anchor = soup.find('a', text=re.compile("contact", re.I))
 			
 			if(anchor):
 				print 'found anchor', anchor.text, anchor.get('href')
-				href = anchor.get('href')
+				href = anchor.get('href').strip()
 				if(href):
-					status_id = 2
+					status_id = 3
 					if href.startswith('http'):
-						driver.get(href)
+						r = session.get(href)
 					else:
 						if href.startswith('/') | href.startswith('#'):
-							driver.get('http://'+url+href)
+							r = session.get('http://'+url+href)
 						else:
-							driver.get('http://'+url+'/'+href)
+							r = session.get('http://'+url+'/'+href)
 					
-					time.sleep(1+random.random()*3)
+					time.sleep(1)
 					
-					source = prepare_source(driver.page_source)
+					source = prepare_source(r.text)
 					
-					prog = re.compile('(mailto:|>|\W)([\w.]+@'+current_url+')', re.I)
-					
-					email = prog.search(source)
-					
-					print 'results', email
-					if(email):
-						if(len(email.groups()) > 1):
-							print 'Email:', email.group(2)
-							status_id = 1
-							email_val = email.group(2)
-					else:
-						prog = re.compile('(mailto:|>|\W)([\w.]+@[\w.]+)', re.I)
-						email = prog.search(source)
-						print 'results', email
-						if(email):
-							if(len(email.groups()) > 1):
-								print 'Email:', email.group(2)
-								status_id = 1
-								email_val = email.group(2)
-		
-		
-		update_contact(email_id, email_val, url, status_id)
-		driver.quit()
-	except Exception:
-		print 'Exception on', url
-		pass
+					email_val = find_email(source, stripped_url)
+					if(email_val):
+						if(add_email(email_val, biz_id)):
+							status_id=2
+			else:
+				email_val = find_email(source, stripped_url)
+				if(email_val):
+					if(add_email(email_val, biz_id)):
+						status_id=2
+						
+	except ConnectionError:
+		print 'error while connecting', href
+		status_id = 5
+		stripped_url = ''
+	
+	update_biz(biz_id, status_id, stripped_url)
+	session.close()
 
-def update_contact(email_id, email, web, status_id):
-
-	try:
-		conn = pymysql.connect(host="waleup.com", user="emails", passwd="emails123", db="emails")
-		cursor = conn.cursor()
-		
-		query = "UPDATE email SET email=%s, web=%s, status_id=%s WHERE id=%s"
-		
-		print 'updating email', email_id, 'with values (', email, ',', web,',', status_id,')'
-		
-		cursor.execute(query, (email, web, status_id, email_id))
-			
-		conn.commit()
-		
-		
+def find_dup(biz_id, email):
+	cursor = conn.cursor()
+	query = 'SELECT biz_id FROM email WHERE email=%s'
+	cursor.execute(query, (email))
+	biz = cursor.fetchone()
+	if(biz):
+		biz_id2 = biz[0]
+		print 'inserting dup', biz_id, biz_id2
+		query = 'INSERT INTO biz_dup (biz_id, dup_id) VALUES (%s, %s), (%s, %s)'
+		cursor.execute(query, (biz_id, biz_id, biz_id, biz_id2))
+		if(commit): conn.commit()
 		cursor.close()
-		conn.close()
+
+def update_biz(biz_id, status_id, web):
+	try:
+		cursor = conn.cursor()
+		print 'updating', biz_id, 'with status', status_id, web
+		
+		if(web == ''):
+			query = 'UPDATE biz SET status_id=%s, web= NULL WHERE id=%s'
+			cursor.execute(query, (status_id, biz_id))
+		else:
+			query = 'UPDATE biz SET status_id=%s, web=%s WHERE id=%s'
+			cursor.execute(query, (status_id, web, biz_id))
+		
+		if commit: conn.commit()
+		cursor.close()
+	
 	except Exception:
 		print 'MySQL error'
 		pass
+		
+def add_email(email, biz_id):
+	try:
+		cursor = conn.cursor()
+		query = "INSERT INTO email (email, biz_id) VALUES (%s, %s)"
+		print 'adding email', email, 'to', biz_id
+		cursor.execute(query, (email, biz_id))
+		if commit: conn.commit()
+		cursor.close()
+		return True
+	except IntegrityError:
+		print 'Email already exists'
+		find_dup(biz_id, email)
+		return False
 		
 def get_links(idd):
 	global offset
@@ -108,28 +149,23 @@ def get_links(idd):
 	print 'offset: ', offset
 	
 	
-	max = 5000 if idd == 0 else 1
+	max = 10000 if idd == 0 else 1
 	while(i < max):
-		conn = pymysql.connect(host="waleup.com", user="emails", passwd="emails123", db="emails")
 		cursor = conn.cursor()
-		
-		where = "WHERE email.status_id = 0 AND email.web <> '' AND email.email = ''" if idd == 0 else "WHERE email.id = "+idd
-		
-		sql = "SELECT email.id, email.email, email.web FROM email "+where+" LIMIT 100 OFFSET "+ str(offset)
+		where = "WHERE status_id = 1 AND web is not null" if idd == 0 else "WHERE id = "+idd
+		sql = "SELECT id, web FROM biz "+where+" LIMIT 100 OFFSET "+ str(offset)
 		cursor.execute(sql)
+			
 		
 		for link in cursor.fetchall():
-			print 'scraping ', link[0], 'url ', link[1]
-			scrape(link[0], link[1], link[2])
+			print '----------------> scraping ', link[0], link[1]
+			scrape(link[0], link[1])
 		
 		i+=100
 		print 'i is at ', i
 			
-		conn.commit()
 		cursor.close()
-		conn.close()
-
-
+	conn.close()
 if __name__ == '__main__':
 	global offset
 	offset = 0 if len(sys.argv) <= 1 else sys.argv[1]
