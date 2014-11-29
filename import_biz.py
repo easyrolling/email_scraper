@@ -14,6 +14,7 @@ config.read('config.ini')
 chrome_path = config.get('chromedriver', 'path')
 conn = pymysql.connect(host=config.get('database', 'host'), user=config.get('database', 'user'), passwd=config.get('database', 'passwd'), db=config.get('database', 'db'))
 commit = True
+offset = 0
 
 def prepare_source(source):
 	source = re.sub('>\W+<', '><', source)
@@ -241,11 +242,10 @@ def get_bus(idd, table, cat_id):
 	conn.close()
 
 if __name__ == '__main__':
-	global offset
-	offset = 0
+	offset = sys.argv[1]
 	idd = 0 
-	table = sys.argv[1]
-	cat_id = sys.argv[2]
+	table = 'sic_advertisers' # sys.argv[1]
+	cat_id = 1 #sys.argv[2]
 
 	get_bus(idd, table, cat_id)
 
