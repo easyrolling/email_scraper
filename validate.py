@@ -1,10 +1,11 @@
-import kickbox
+import kickbox, os
 import json, pymysql, ConfigParser
 
 kickbox
 
 config = ConfigParser.ConfigParser()
-config.read('config.ini')
+dirname = os.path.dirname(os.path.realpath(__file__))
+config.read(dirname+'/config.ini')
 kickbox_key = config.get('kickbox', 'key')
 conn = pymysql.connect(host=config.get('database', 'host'), user=config.get('database', 'user'), passwd=config.get('database', 'passwd'), db=config.get('database', 'db'))
 
@@ -27,7 +28,7 @@ def check_email(email):
 
 def get_emails():
 	cursor = conn.cursor()
-	sql = "select email.id, email.email from email WHERE email.email<>'' and status_id=2 LIMIT 100"
+	sql = "select email.id, email.email from email WHERE email.email<>'' and status_id=2 LIMIT 1000"
 	cursor.execute(sql)
 	
 	for email in cursor.fetchall():

@@ -86,7 +86,7 @@ def get_links():
 	max = 10000
 	while i < max:
 	
-		query = 'SELECT link.id, link.link, link.biz_id FROM link, email WHERE link.is_scraped=0 AND link_type_id=3 AND link.biz_id=email.id AND email.status_id=-1 AND email.web = "" LIMIT 100'
+		query = 'SELECT link.id, link.link, link.biz_id FROM link, email WHERE link.is_scraped=0 AND link_type_id=3 AND link.biz_id=email.id AND email.status_id=-1 LIMIT 100'
 		cursor = conn.cursor()
 		
 		cursor.execute(query)
