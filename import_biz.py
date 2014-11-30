@@ -244,8 +244,8 @@ def get_bus(idd, table, cat_id):
 if __name__ == '__main__':
 	offset = sys.argv[1]
 	idd = 0 
-	table = 'sic_advertisers' # sys.argv[1]
-	cat_id = 1 #sys.argv[2]
+	table = 'sic_publishers' # sys.argv[1]
+	cat_id = 2 #sys.argv[2]
 
 	get_bus(idd, table, cat_id)
 
